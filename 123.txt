@@ -1,0 +1,1487 @@
+
+
+
+
+ 
+
+<script>
+
+    function docomment(cid) {
+
+        var uid = @Session["User_Id"];
+
+        var upic='@Session["profilepic"]';
+
+        var uname='@Session["studentname"]';
+
+        $( "#reponcmt"+cid ).css("display","block");
+
+        $( "#reponcmt"+cid ).append('<div id=cmreinfo'+cid+'></div><div class="repblock"><img src='+upic.replace("~", "..")+' ><input type="text" id=cmdataonr'+cid+' />'+
+
+            '<button onclick="sendoncmt('+cid+','+uid+');">send</button></div>');
+
+    }
+
+    function cmtoncmt(cid,uid){
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("cmtoncmt")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { comment_id: cid, user_id: uid },
+
+            success: function (states) {
+
+                $( "#reponcmt"+cid ).css("display","block");
+
+                $('#cmreinfo' + cid ).css('display','block');
+
+                $.each(states, function (i, state) {
+
+                    $('#cmreinfo' + cid ).append( "<div class='commentsboxin'><div class='c_image'><img src='" + state.cc_image.replace("~", "..") + "' width='40px' height='40px' ><div class='c_nc" + cid + "'><span class='cmt_name_style' >" + state.cc_username + "</span><span>" + state.cc_content +
+
+                         "</span><div class='clear'></div></div><div class='clear'></div></div>");
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function sendoncmt(cid,uid){
+
+        var datacr = $('#cmdataonr'+cid).val();
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("CommentOnComment")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { comment_id: cid, user_id: uid , comment_text:datacr},
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#cmreinfo' + cid ).text('');
+
+                    $('.repblock').hide();
+
+                    cmtoncmt(cid,uid);
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    // comment added by Saurabh to fix ticket # 1403
+
+    //on load call the functoins for if any likes , shares and comments  then show the values
+
+    function run(id, s_id) {
+
+        likefind(id, s_id);
+
+        sharefind(id, s_id);
+
+        commentfind(id, s_id);
+
+        comment_present(id, s_id);
+
+ 
+
+    }
+
+    function like_on_comment(comment_id, user_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("LikedComment")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { comment_id: comment_id, user_id: user_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#' + state.Text + 'like_on_comment').css("color", "#337ab7");
+
+                    $('#' + state.Text + 'like_on_comment_val').text(state.Value);
+
+ 
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function getdata(id,s_id){
+
+        var x = $('#' + id + 'commentnames').css('display');
+
+        if(x == 'none'){
+
+            $('#' + id + 'commentnames').css('display','block');
+
+            commentnamesfind(id, s_id);}
+
+        else{
+
+        }
+
+    }
+
+    function comment_present(id, s_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("CommentName_present")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    if (state.Text > 0) {
+
+                        commentnamesfind(id, s_id);
+
+                    }
+
+                    else{
+
+                        $('#' + id + 'commentnames').css('display','none')
+
+                    }
+
+ 
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function runforcount(comment_id){
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("LikedCommentCount")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { comment_id: comment_id},
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#' + state.Text + 'like_on_comment_val').text(state.Value);
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states' + ex);
+
+            }
+
+        });
+
+    }
+
+    function commentnamesfind(id, s_id) {
+
+        var loginuserid = $('#loginuserid').val();
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("CommentNameInfo")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    runforcount(state.c_comment_id  );
+
+                    cmtoncmt(state.c_comment_id,loginuserid);
+
+                    $('#' + id + 'commentnames').append("<div class='commentsbox'><div class='c_image'><img src='" + state.c_image.replace("~", "..") + "' width='40px' height='40px' ><div class='c_nc" + state.c_comment_id + "'><span class='cmt_name_style' >" + state.c_username + "</span><span>" + state.c_content +
+
+                     "</span><div class='clear'></div><div class='c_r_l'><button class='lik_btn1' id=repbtn_on_cmt" + state.c_comment_id + " onclick='docomment(" + state.c_comment_id + ")'>reply</button> <button class='lik_btn1' onclick='like_on_comment(" + state.c_comment_id + "," + loginuserid + ")'>like </button><button class='glyphicon glyphicon-thumbs-up link-btn lik_btn' id=" + state.c_comment_id + "like_on_comment > (<span class='like-space numlike' id=" + state.c_comment_id + "like_on_comment_val>0</span>)</button></div></div><div class='clear'></div>"+
+
+                     "<div id=cmreinfo"+state.c_comment_id +"></div><div id=reponcmt"+state.c_comment_id +"></div></div></div>");
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function likefind(id, s_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("LikedimageCount")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    if (state.Text > 0) {
+
+                        $('#' + state.Value + 'likes').css("color", "#337ab7");
+
+                    }
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function sharefind(id, s_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("ShareimageCount")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    if (state.Text > 0) {
+
+                        $('#' + state.Value + 'shares').css("color", "#FFA64C");
+
+                    }
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+    function commentfind(id, s_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("CommentimageCount")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    if (state.Text > 0) {
+
+                        $('#' + state.Value + 'comments').css("color", "#224E99");
+
+                    }
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+ 
+
+// written added by Saurabh to fix ticket # 905
+
+    //like on gallery image or a post
+
+    function like(id,s_id)
+
+    {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("Likedimage")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id , sender_id:s_id},
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#' + state.Text + 'likes').css("color", "#337ab7");
+
+                    $('#' + state.Text + 'like').text(state.Value);
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+ 
+
+// written added by Saurabh to fix ticket # 905
+
+    //share on gallery image or a post
+
+    function share(id, s_id) {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("Sharedimage")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#' + state.Text + 'shares').css("color", "#FFA64C");
+
+                    $('#' + state.Text + 'share').text(state.Value);
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+ 
+
+// written added by Saurabh to fix ticket # 905
+
+    //Comment on gallery image or a post
+
+    function comment(id, s_id , txt)
+
+    {
+
+        $.ajax({
+
+            type: 'POST',
+
+            url: '@Url.Action("CommentImage")', // we are calling json method
+
+            dataType: 'json',
+
+            data: { id: id, sender_id: s_id, comment_text: txt },
+
+            success: function (states) {
+
+                $.each(states, function (i, state) {
+
+                    $('#' + state.Text + 'commentnames').text('');
+
+                    $('#' + state.Text + 'comments').css("color", "#224E99");
+
+                    $('#' + state.Text + 'comment').text(state.Value);
+
+                    $('#' + state.Text ).val('');
+
+                });
+
+            },
+
+            error: function (ex) {
+
+                alert('Failed to retrieve states.' + ex);
+
+            }
+
+        });
+
+    }
+
+</script>
+
+<body>
+
+    <div class="container">
+
+        @Html.Partial("~/Views/Home/header.cshtml")    <div class="col-md-12">
+
+            <!-- Right Section Starts Here -->
+
+            <div class="col-md-2 col-sm-12 content">
+
+                <div id="col-left" class="col-left ">
+
+                    <ul class="main-menu">
+
+                        <nav id="main-nav" class="main-nav">
+
+                            <li class="has-submenu">
+
+                                <a href="~/Users/MainPage"><i class="glyphicon glyphicon-home"></i><span class="text">Home</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu active">
+
+                                <a href="#" class="user-clr"><i class="glyphicon glyphicon-user user-clr"></i><span class="text user-clr arr-pos-left">Users</span><i class="glyphicon glyphicon-chevron-right arrow user-clr arr-pos"></i></a>
+
+ 
+
+                                <ul class="list-unstyled sub-menu pad_left">
+
+                                    <li class="sub-list">
+
+                                        <a href="~/Users/ProfilePage">
+
+                                            <i class="glyphicon glyphicon-play"></i><span class="text">My Profile</span>
+
+                                        </a>
+
+                                    </li>
+
+                                    <li class="sub-list">
+
+                                        <a href="~/Home/UnderConstruction">
+
+                                            <i class="glyphicon glyphicon-play"></i><span class="text">Edit Profile</span>
+
+                                        </a>
+
+                                    </li>
+
+                                </ul>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-time"></i><span class="text">Recent Updates</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-briefcase"></i><span class="text">Jobs</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-comment"></i><span class="text">Messages</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-picture"></i><span class="text">Photos</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-expand"></i><span class="text">Videos</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-user"></i><span class="text">Group</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-blackboard"></i><span class="text">Schools</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu">
+
+                                <a href="#"><i class="glyphicon glyphicon-user"></i><span class="text">Friends</span><i class="glyphicon glyphicon-chevron-right arrow"></i></a>
+
+                            </li>
+
+                            <li class="has-submenu1 out-bg">
+
+                                <a href="#" class="out-mar" onclick="@("window.location.href='" + @Url.Action("LoginPartial", "Home") + "'");"><i class="glyphicon glyphicon-user"></i><span class="text">@Html.Raw((string)ViewBag.studentname)</span><i class="glyphicon glyphicon-share arrow"></i></a>
+
+                            </li>
+
+                        </nav>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+            <!-- Left Section Ends Here -->
+
+            <!-- Middle Section Starts Here -->
+
+            <div class="col-md-7 col-sm-12 content1">
+
+                <!-- Cover Section Starts Here -->
+
+                <div class="cover profile">
+
+                    <div class="wrapper">
+
+                        <div class="image">
+
+                            @Html.ActionLink(" ", "CoverImage", "FilesUpload", null, new { @id = "cover-pic", @class = "glyphicon glyphicon-camera cover-pic", title = "Change cover Image" })
+
+                            <img src="@Url.Content(ViewBag.coverimg)" alt="people" />
+
+                        </div>
+
+                    </div>
+
+                    <div class="clear"></div>
+
+                    <div class="cover-info">
+
+                        <div class="avatar">
+
+                            <img src="@Url.Content(ViewBag.profilepic)" alt="people" />
+
+                        </div>
+
+                        <div class="name"><a href="#">@Html.Raw((string)ViewBag.studentname)</a><input type="text" value=@Html.Raw((string)ViewBag.user_id) class="hideblocks" id="loginuserid" /></div>
+
+                        <div class="name1"><a href="#">@Html.Raw((string)ViewBag.schoolname)</a></div>
+
+                    </div>
+
+                    <div class="clear"></div>
+
+                    <div class="butt-profile">
+
+                        <div class="left left-p">@Html.ActionLink("Change Profile", "FileUpload", "FilesUpload", null, new { @class = "fon-profile" })</div>
+
+                        <div class="left">@Html.ActionLink("Add Photos/Videos", "AddPhotos_Videos", "FilesUpload", null, new { @class = "fon-photo" })</div>
+
+                        <div class="left">@Html.ActionLink("Friends", "ProfilePage", "Users", null, new { @class = "fon-frineds" })</div>
+
+                        <div class="left dropdown reqfriend">
+
+                            <a href="" class="fon-friendrq dropdown-toggle" data-toggle="dropdown">Friend Requests</a>
+
+                            <ul class="dropdown-menu frd_req">
+
+                                @foreach (DataRow row1 in ViewBag.RequestMeList.Rows)
+
+                                {
+
+                                    <li>
+
+                                        @foreach (DataColumn col1 in ViewBag.RequestMeList.Columns)
+
+                                        {
+
+                                            string s1 = col1.ColumnName;
+
+ 
+
+                                            switch (s1)
+
+                                            {
+
+                                                case "username":
+
+                                                    string request_user_img = "";
+
+                                                    string request_username = "";
+
+                                                    string request_user_id = "";
+
+                                                    request_user_img = row1.ItemArray[0].ToString();
+
+                                                    request_username = row1.ItemArray[1].ToString();
+
+                                                    request_user_id = row1.ItemArray[2].ToString();
+
+                                                    <div class="row">
+
+                                                        <div class="comm-prof1" style="float:left">
+
+                                                            <img src="@Url.Content(request_user_img)" alt="people" />
+
+                                                        </div>
+
+                                                        <div class="req_info">
+
+                                                            @Html.ActionLink(request_username, "FriendPagecall", "Users", new { ID = request_user_id }, new { @class = "font-img" })
+
+ 
+
+                                                            @*<a href="#">@request_username</a>*@
+
+                                                            <div>
+
+                                                                @using (Html.BeginForm("Rejuct", "Users"))
+
+                                                                {
+
+                                                                    @Html.EditorFor(model => model.request_to_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @Html.Raw((string)ViewBag.user_id) } })
+
+                                                                    @Html.EditorFor(model => model.request_by_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @request_user_id } })
+
+                                                                    <button class="btn btn-warning btn-pos1 pull-right">Reject</button>}
+
+                                                                @using (Html.BeginForm("Refer", "Users"))
+
+                                                                {
+
+                                                                    @Html.EditorFor(model => model.request_to_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @Html.Raw((string)ViewBag.user_id) } })
+
+                                                                    @Html.EditorFor(model => model.request_by_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @request_user_id } })
+
+                                                                    <button class="btn btn-primary btn-pos1 pull-right">Accept</button>}
+
+                                                                <div class="clear"></div>
+
+                                                            </div>
+
+                                                        </div>
+
+                                                        <div class="clear"></div>
+
+                                                    </div>
+
+                                                                break;
+
+                                            }
+
+                                        }
+
+                                    </li>}
+
+                            </ul>
+
+                        </div>
+
+ 
+
+                    </div>
+
+                    <div class="clear"></div>
+
+                </div>
+
+                <!-- Cover Section Ends Here -->
+
+                <div class="clear"></div>
+
+                <!-- Comment Section Starts Here -->
+
+ 
+
+                <div class="row">
+
+                    <div class="col-md-12 col-sm-12 col-xs-12 comment-box">
+
+                        <div class="col-md-1 col-sm-1 col-xs-1 comm-prof">
+
+                            <img src="@Url.Content(ViewBag.profilepic)" alt="people" />
+
+                        </div>
+
+                        @using (Html.BeginForm("PostCmt", "Users"))
+
+                        {
+
+                            <div class="col-md-9 col-sm-9 col-xs-9 col-top">
+
+ 
+
+                                <div class="form-group">
+
+                                    @Html.TextAreaFor(model => model.postComment, new { @placeholder = "Post your comments here", @class = "form-control cont" })
+
+                                    @Html.EditorFor(model => model.request_by_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @Html.Raw((string)ViewBag.user_id) } })
+
+                                </div>
+
+ 
+
+ 
+
+                            </div>
+
+                            <div class="col-md-2 col-sm-2 col-xs-2 pull-right">
+
+                                <div class="btn-group " role="group">
+
+                                    <button class="btn btn-primary btn-wid">Post</button>
+
+                                </div>
+
+                            </div>
+
+                        }
+
+                    </div>
+
+                </div>
+
+                <!-- Comment Section Ends Here -->
+
+                <!-- People you may know Section Starts Here -->
+
+                <div class="row">
+
+                    <div class="col-md-12 comment-box1">
+
+                        <div class="people-top">
+
+                            <img src="~/Images/peopleyoumayknow.png" alt="people" /><span>People you may know</span>
+
+                        </div>
+
+                        <ul class="row people-bottom">
+
+                            @foreach (DataRow row in ViewBag.StudentList.Rows)
+
+                            {
+
+ 
+
+                                <li class="col-md-12 request ">
+
+                                    @foreach (DataColumn col in ViewBag.StudentList.Columns)
+
+                                    {
+
+                                        string s = col.ColumnName;
+
+ 
+
+                                        switch (s)
+
+                                        {
+
+ 
+
+                                            case "image_name":
+
+ 
+
+                                                string strimage = "";
+
+                                                strimage = row.ItemArray[0].ToString();
+
+                                                <div class="col-md-2 avatar1">
+
+                                                    <img src="@Url.Content(strimage)" alt="people" />
+
+                                                </div>
+
+                                                break;
+
+ 
+
+                                            case "username":
+
+                                                string strusersname = "";
+
+                                                string strusersschool = "";
+
+                                                string strusersid = "";
+
+                                                string strbutton = "";
+
+ 
+
+                                                string struserbtn = "";
+
+                                                strusersname = row.ItemArray[1].ToString();
+
+                                                strusersschool = row.ItemArray[2].ToString();
+
+                                                strbutton = row.ItemArray[3].ToString();
+
+                                                strusersid = row.ItemArray[4].ToString();
+
+                                                struserbtn = row.ItemArray[5].ToString();
+
+                                                <div class="col-md-10 request-middle">
+
+                                                    <ul>
+
+                                                        <li>@Html.ActionLink(strusersname, "FriendPagecall", "Users", new { ID = strusersid }, new { @class = "font-img" })</li>
+
+                                                        <li><a href="#" class="fon-img">@strusersschool</a></li>
+
+                                                        <li>
+
+ 
+
+                                                            @using (Html.BeginForm("MainPage", "Users"))
+
+                                                            {
+
+                                                                string struser_id = "";
+
+                                                                struser_id = row.ItemArray[4].ToString();
+
+ 
+
+                                                                @Html.EditorFor(model => model.request_by_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @Html.Raw((string)ViewBag.user_id) } })
+
+                                                                @Html.EditorFor(model => model.request_to_user, new { htmlAttributes = new { @class = "hideblocks", @Value = @struser_id } })
+
+                                                                <button id="btnfrd_request" name="btnfrd_request" class=" btn btn-primary btn-pos pull-right ">Meet Me</button>
+
+                                                            }
+
+ 
+
+ 
+
+ 
+
+                                                    </ul>
+
+                                                </div>
+
+                                                <div class="clear"></div>
+
+                                                            break;
+
+                                        }
+
+                                    }
+
+                                </li>
+
+                            }
+
+                            <div class="clear"></div>
+
+                        </ul>
+
+ 
+
+                    </div>
+
+                </div>
+
+                <!-- People you may know Section Ends Here -->
+
+                <div class="clear"></div>
+
+ 
+
+                <!-- Gallery Section Starts Here -->
+
+                @foreach (DataRow row in ViewBag.ImageGallery.Rows)
+
+                {
+
+                    if (@row.ItemArray[10].ToString() == "text")
+
+                    {
+
+                        <div class="row gallery-part">
+
+                            <div class="col-md-12 col-sm-12 col-xs-12 gallery-inner">
+
+ 
+
+                                <div class="col-md-2 col-sm-2 col-xs-2 avatar2">
+
+                                    <img src="@Url.Content(row.ItemArray[5].ToString())" alt="people" onload="run(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id));" /><br>
+
+                                    <span class="profile-time">@row.ItemArray[3].ToString() </span>
+
+                                </div>
+
+                                <div class="col-md-10 col-sm-10 col-xs-10 image-box">
+
+                                    <div class="image-upper">
+
+                                        <div class="text-left">
+
+                                            <span class="gallery-font">@row.ItemArray[2].ToString()</span>
+
+                                            <span class="fon-img">shared an image</span>
+
+                                        </div>
+
+                                        <div class="text-right">
+
+                                            <form>
+
+                                                <button class="glyphicon glyphicon-thumbs-up link-btn" type="button" onclick="like(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id))" id=@row.ItemArray[4].ToString() likes><span class="like-space numlike" id=@row.ItemArray[4].ToString() like>@row.ItemArray[6].ToString()</span></button>
+
+                                            </form>
+
+                                            <form>
+
+                                                <button class="glyphicon glyphicon-share link-btn" type="button" onclick="share(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id))" id=@row.ItemArray[4].ToString() shares><span class="like-space" id=@row.ItemArray[4].ToString() share>@row.ItemArray[7].ToString()</span></button>
+
+                                            </form>
+
+                                            <button class="glyphicon glyphicon-comment link-btn" id=@row.ItemArray[4].ToString() comments><span class="like-space" id=@row.ItemArray[4].ToString() comment>@row.ItemArray[8].ToString()</span></button>
+
+                                        </div>
+
+                                        <div class="clear"></div>
+
+                                    </div>
+
+                                    <div class="post_cmt">@row.ItemArray[0].ToString()</div>
+
+                                    <div class="clear"></div>
+
+ 
+
+                                </div>
+
+                                <div class="clear"></div>
+
+ 
+
+                                <div class="row">
+
+                                    <div class="col-md-12 col-sm-12 col-xs-12 comment-box2">
+
+                                        <div class="col-md-2 col-sm-2 col-xs-2 avatar3">
+
+                                            <img src="@Url.Content(ViewBag.profilepic)" alt="people" />
+
+                                        </div>
+
+                                        <div class="col-md-10 col-sm-10 col-xs-10 ">
+
+                                            <div>
+
+                                                <form>
+
+ 
+
+ 
+
+                                                    <div class="form-group col-md-10 cmt_box">
+
+                                                        <input type="text" class="form-control cont1" id=@row.ItemArray[4].ToString() onfocus="getdata(@row.ItemArray[4].ToString(),@Html.Raw((string)ViewBag.user_id))">
+
+                                                    </div>
+
+ 
+
+ 
+
+ 
+
+                                                    <div class="btn-group col-md-2 pull-right">
+
+                                                        <button class="btn btn-primary btn-wid1" type="button" onclick="comment(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id),document.getElementById(@row.ItemArray[4].ToString()).value)">send</button>
+
+                                                    </div>
+
+                                                    <div class="clear"></div>
+
+ 
+
+                                                </form>
+
+                                            </div>
+
+                                            <div id=@row.ItemArray[4].ToString() commentnames>
+
+ 
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+ 
+
+                            </div>
+
+                            <div class="clear"> </div>
+
+                        </div>
+
+ 
+
+                    }
+
+                    else
+
+                    {<div class="row gallery-part">
+
+                        <div class="col-md-12 col-sm-12 col-xs-12 gallery-inner">
+
+ 
+
+                            <div class="col-md-2 col-sm-2 col-xs-2 avatar2">
+
+                                <img src="@Url.Content(row.ItemArray[5].ToString())" alt="people" onload="run(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id));" /><br>
+
+                                <span class="profile-time">@row.ItemArray[3].ToString() </span>
+
+                            </div>
+
+                            <div class="col-md-10 col-sm-10 col-xs-10 image-box">
+
+                                <div class="image-upper">
+
+                                    <div class="text-left">
+
+                                        <span class="gallery-font">@row.ItemArray[2].ToString()</span>
+
+                                        <span class="fon-img">shared an image</span>
+
+                                    </div>
+
+                                    <div class="text-right">
+
+                                        <form>
+
+                                            <button class="glyphicon glyphicon-thumbs-up link-btn" type="button" onclick="like(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id))" id=@row.ItemArray[4].ToString() likes><span class="like-space numlike" id=@row.ItemArray[4].ToString() like>@row.ItemArray[6].ToString()</span></button>
+
+                                        </form>
+
+                                        <form>
+
+                                            <button class="glyphicon glyphicon-share link-btn" type="button" onclick="share(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id))" id=@row.ItemArray[4].ToString() shares><span class="like-space" id=@row.ItemArray[4].ToString() share>@row.ItemArray[7].ToString()</span></button>
+
+                                        </form>
+
+                                        <button class="glyphicon glyphicon-comment link-btn" id=@row.ItemArray[4].ToString() comments><span class="like-space" id=@row.ItemArray[4].ToString() comment>@row.ItemArray[8].ToString()</span></button>
+
+                                    </div>
+
+                                </div>
+
+                                <a href="@Url.Content(row.ItemArray[0].ToString())" class='fresco' data-fresco-group='example'><img src="@Url.Content(row.ItemArray[0].ToString())" class="image-set" title="Click to Zoom the Image" /></a>
+
+                            </div>
+
+                            <div class="clear"></div>
+
+ 
+
+                            <div class="row">
+
+                                <div class="col-md-12 col-sm-12 col-xs-12 comment-box2">
+
+                                    <div class="col-md-2 col-sm-2 col-xs-2 avatar3">
+
+                                        <img src="@Url.Content(ViewBag.profilepic)" alt="people" />
+
+                                    </div>
+
+                                    <div class="col-md-10 col-sm-10 col-xs-10 ">
+
+                                        <div>
+
+                                            <form>
+
+                                                <div class="form-group col-md-10 cmt_box">
+
+                                                    <input type="text" class="form-control cont1" id=@row.ItemArray[4].ToString() onfocus="getdata(@row.ItemArray[4].ToString(),@Html.Raw((string)ViewBag.user_id))">
+
+                                                </div>
+
+                                                <div class="btn-group col-md-2 pull-right">
+
+                                                    <button class="btn btn-primary btn-wid1" type="button" onclick="comment(@row.ItemArray[4].ToString(), @Html.Raw((string)ViewBag.user_id),document.getElementById(@row.ItemArray[4].ToString()).value)">send</button>
+
+                                                </div>
+
+                                                <div class="clear"></div>
+
+ 
+
+                                            </form>
+
+                                        </div>
+
+                                        <div id=@row.ItemArray[4].ToString() commentnames>
+
+ 
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+ 
+
+                        </div>
+
+                        <div class="clear"> </div>
+
+                    </div>}
+
+ 
+
+                }
+
+            </div>
+
+ 
+
+            <!-- Gallery Section Ends Here -->
+
+            <!-- Middle Section Ends Here -->
+
+            <!-- Right Section Starts Here -->
+
+ 
+
+            <div class="col-md-3 col-sm-12 col-xs-12 content2">
+
+                <div class="advs">
+
+                    <div class="adv-full">
+
+                        <div class="lat-advert"> latest advertisements </div>
+
+                        <div class="lat-article">
+
+                            <div class="article" id="advContainer">
+
+                                @foreach (DataRow rowa in ViewBag.AdvList.Rows)
+
+                                {
+
+ 
+
+                                    <div class="article">
+
+                                        @foreach (DataColumn cola in ViewBag.AdvList.Columns)
+
+                                        {
+
+ 
+
+                                            string str = cola.ColumnName;
+
+                                            switch (str)
+
+                                            {
+
+ 
+
+                                                case "adv_title":
+
+ 
+
+                                                    string advID = "";
+
+                                                    string advTitle = "";
+
+                                                    string advDesc = "";
+
+                                                    string advLogo = "";
+
+ 
+
+                                                    string advLink = "";
+
+ 
+
+                                                    advID = rowa.ItemArray[0].ToString();
+
+                                                    advTitle = rowa.ItemArray[1].ToString();
+
+                                                    advDesc = rowa.ItemArray[2].ToString();
+
+                                                    advLogo = rowa.ItemArray[3].ToString();
+
+ 
+
+                                                    advLink = rowa.ItemArray[4].ToString();
+
+                                                    <div class="art-left"><img src="@Url.Content(advLogo)" alt="people" /></div>
+
+                                                    <div class="art-right">
+
+                                                        <a href="@Url.Content(advLink)" target="_blank" class="art-rgt-top">@advTitle</a>
+
+                                                        <div class="art-rgt-bottom">@advDesc</div>
+
+                                                    </div>
+
+                                                    break;
+
+                                            }
+
+                                        }
+
+                                        <div class="clear"></div>
+
+                                    </div>
+
+                                }
+
+ 
+
+                            </div>
+
+                            <div class="page-nation">
+
+                                <div class="holderadv text-center"></div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="clear"></div>
+
+                <div class="jobs">
+
+                    <div class="adv-full">
+
+                        <div class="lat-advert">  Jobs you may be intrested in </div>
+
+                        <div class="lat-article">
+
+                            <div class="article" id="itemContainer1">
+
+                                @foreach (DataRow rowj in ViewBag.Resultjobs.Rows)
+
+                                {
+
+ 
+
+                                    <div class="article">
+
+                                        @foreach (DataColumn colj in ViewBag.Resultjobs.Columns)
+
+                                        {
+
+ 
+
+                                            string str = colj.ColumnName;
+
+                                            switch (str)
+
+                                            {
+
+ 
+
+                                                case "job_title":
+
+                                                    string jobID = "";
+
+                                                    string jobTitle = "";
+
+                                                    string jobSubTitle = "";
+
+                                                    string jobDesc = "";
+
+                                                    string jobLogo = "";
+
+                                                    jobID = rowj.ItemArray[0].ToString();
+
+                                                    jobTitle = rowj.ItemArray[1].ToString();
+
+                                                    jobSubTitle = rowj.ItemArray[2].ToString();
+
+                                                    jobDesc = rowj.ItemArray[3].ToString();
+
+                                                    jobLogo = rowj.ItemArray[4].ToString();
+
+                                                    <div class="art-left"><img src="@Url.Content(jobLogo)" alt="people" /></div>
+
+                                                    <div class="art-right">
+
+                                                        <div class="art-rgt-top">@Html.ActionLink(jobTitle, "JobPagecall", "Users", new { JobID = jobID }, new { @class = "art-rgt-top" })</div>
+
+                                                        <div class="art-rgt-middle">@jobSubTitle</div>
+
+                                                        <div class="art-rgt-bottom">@jobDesc</div>
+
+                                                    </div>
+
+                                                    break;
+
+                                            }
+
+                                        }
+
+                                        <div class="clear"></div>
+
+                                    </div>
+
+                                }
+
+ 
+
+                            </div>
+
+                            <div class="page-nation">
+
+                                <div class="holder123 text-center"></div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="clear"></div>
+
+ 
+
+            </div>
+
+            <!-- Right Section Ends Here -->
+
+        </div>
+
+    </div>
+
+</body>
+
+<div id="modal-container" data-keyboard="false" data-backdrop="static" class="modal fade" tabindex="-1" role="dialog">
+
+    <div class="modal-content" style="background: #F9EEE2;">
+
+    </div>
+
+</div>
